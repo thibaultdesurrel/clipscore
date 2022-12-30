@@ -26,7 +26,7 @@ import pprint
 import warnings
 from packaging import version
 
-"""
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -61,7 +61,7 @@ def parse_args():
         print('if you\'re saving per-instance, please make sure the filepath ends in json.')
         quit()
     return args
-"""
+
 
 class CLIPCapDataset(torch.utils.data.Dataset):
     def __init__(self, data, prefix='A photo depicts'):
@@ -203,24 +203,24 @@ def get_refonlyclipscore(model, references, candidates, device):
     return np.mean(per), per
 
 
-def main_clipscore(image_dir,candidates_json):
-    #args = parse_args()
+def main():
+    args = parse_args()
 
-    image_paths = [os.path.join(image_dir, path) for path in os.listdir(image_dir)
+    image_paths = [os.path.join(args.image_dir, path) for path in os.listdir(args.image_dir)
                    if path.endswith(('.png', '.jpg', '.jpeg', '.tiff'))]
     image_ids = [pathlib.Path(path).stem for path in image_paths]
 
-    with open(candidates_json) as f:
+    with open(args.candidates_json) as f:
         candidates = json.load(f)
     candidates = [candidates[cid] for cid in image_ids]
-    """
+
     if args.references_json:
         with open(args.references_json) as f:
             references = json.load(f)
             references = [references[cid] for cid in image_ids]
             if isinstance(references[0], str):
                 references = [[r] for r in references]
-    """
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     if device == 'cpu':
         warnings.warn(
@@ -235,7 +235,7 @@ def main_clipscore(image_dir,candidates_json):
     # get image-text clipscore
     _, per_instance_image_text, candidate_feats = get_clip_score(
         model, image_feats, candidates, device)
-    """
+
     if args.references_json:
         # get text-text clipscore
         _, per_instance_text_text = get_refonlyclipscore(
@@ -247,13 +247,13 @@ def main_clipscore(image_dir,candidates_json):
                   zip(image_ids, per_instance_image_text, refclipscores)}
 
     else:
-    """
-    scores = {image_id: {'CLIPScore': float(clipscore)}
-              for image_id, clipscore in
-              zip(image_ids, per_instance_image_text)}
-    print('CLIPScore: {:.4f}'.format(np.mean([s['CLIPScore'] for s in scores.values()])))
-    return np.mean([s['CLIPScore'] for s in scores.values()])
-    """
+        scores = {image_id: {'CLIPScore': float(clipscore)}
+                  for image_id, clipscore in
+                  zip(image_ids, per_instance_image_text)}
+        print(np.mean([s['CLIPScore'] for s in scores.values()]))
+
+        #return np.mean([s['CLIPScore'] for s in scores.values()])
+
     if args.references_json:
         if args.compute_other_ref_metrics:
             other_metrics = generation_eval_utils.get_all_metrics(references, candidates)
@@ -269,4 +269,7 @@ def main_clipscore(image_dir,candidates_json):
     if args.save_per_instance:
         with open(args.save_per_instance, 'w') as f:
             f.write(json.dumps(scores))
-    """
+
+
+if __name__ == '__main__':
+    main()
